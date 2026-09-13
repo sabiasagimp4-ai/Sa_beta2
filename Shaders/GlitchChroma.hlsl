@@ -49,12 +49,20 @@ float2 BandOffset(float y)
     return float2(active * dir * glitchMaxShift * glitchAmount, 0.0);
 }
 
+// Explicit LOD is valid inside the dynamic passthrough/aberration branches.
+// Implicit-derivative sampling can trigger FXC's main_Impl uninitialized warning.
+float4 SampleAt(float2 pos)
+{
+    float4 uv = D2DGetInputCoordinate(0);
+    return InputTexture0.SampleLevel(InputSampler0, uv.xy + uv.zw * (pos - D2DGetScenePosition().xy), 0);
+}
+
 // Clamp to the true image bounds instead of letting the border go transparent,
 // so large shifts/aberration stretch the edge pixels instead of showing black.
 float4 SampleClamped(float2 pos)
 {
     float2 clamped = clamp(pos, inputBounds.xy + 0.5, inputBounds.zw - 0.5);
-    return D2DSampleInputAtPosition(0, clamped);
+    return SampleAt(clamped);
 }
 
 D2D_PS_ENTRY(main)
@@ -62,14 +70,14 @@ D2D_PS_ENTRY(main)
     float2 p = D2DGetScenePosition().xy;
     bool flat = glitchAmount <= 0 && chromaticAberration <= 0 && scanlineAmount <= 0
         && vignetteAmount <= 0 && saturation == 1 && hueRotate == 0 && brightness == 1;
-    if (flat) return D2DSampleInputAtPosition(0, p);
+    if (flat) return SampleAt(p);
 
     float2 shift = BandOffset(p.y);
     float2 basePos = p + shift;
     float4 centerSample = SampleClamped(basePos);
     float alpha = centerSample.a;
 
-    float3 rgb;
+    float3 rgb = unpremultiply(centerSample);
     if (chromaticAberration > 0)
     {
         float r = unpremultiply(SampleClamped(basePos + float2(chromaticAberration, 0))).r;
