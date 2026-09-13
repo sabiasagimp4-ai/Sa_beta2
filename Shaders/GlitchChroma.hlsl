@@ -1,3 +1,4 @@
+#define D2D_REQUIRES_SCENE_POSITION
 #define D2D_ENTRY main
 #include <d2d1effecthelpers.hlsli>
 
@@ -52,7 +53,7 @@ float2 BandOffset(float y)
 // so large shifts/aberration stretch the edge pixels instead of showing black.
 float4 SampleClamped(float2 pos)
 {
-    float2 clamped = clamp(pos, inputBounds.xy, inputBounds.zw - 1.0);
+    float2 clamped = clamp(pos, inputBounds.xy + 0.5, inputBounds.zw - 0.5);
     return D2DSampleInputAtPosition(0, clamped);
 }
 

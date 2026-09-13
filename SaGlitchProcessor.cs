@@ -8,21 +8,23 @@ internal sealed class SaGlitchProcessor : IVideoEffectProcessor
 {
     private readonly SaGlitchEffect _item;
     private readonly GlitchChromaEffect? _effect;
+    private readonly ID2D1Image? _output;
     private ID2D1Image? _input;
 
     public SaGlitchProcessor(IGraphicsDevicesAndContext devices, SaGlitchEffect item)
     {
         _item = item;
         var effect = new GlitchChromaEffect(devices);
-        if (!effect.IsEnabled)
+        try
         {
-            effect.Dispose();
-            return;
+            if (!effect.IsEnabled) return;
+            _output = effect.Output;
+            _effect = effect;
         }
-        _effect = effect;
+        finally { if (_effect is null) effect.Dispose(); }
     }
 
-    public ID2D1Image Output => _effect?.Output ?? _input ?? throw new InvalidOperationException("入力が未設定です。");
+    public ID2D1Image Output => _output ?? _input ?? throw new InvalidOperationException("入力が未設定です。");
 
     public void SetInput(ID2D1Image? input)
     {
@@ -63,6 +65,7 @@ internal sealed class SaGlitchProcessor : IVideoEffectProcessor
     public void Dispose()
     {
         ClearInput();
+        _output?.Dispose();
         _effect?.Dispose();
     }
 }

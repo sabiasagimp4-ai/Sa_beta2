@@ -56,8 +56,10 @@ internal sealed class GlitchChromaEffect(IGraphicsDevicesAndContext devices)
             // left/right by the worst case shift (max shift * amount) plus
             // the chromatic-aberration offset; rows never move vertically.
             int halo = (int)MathF.Ceiling(_constants.GlitchMaxShift * _constants.GlitchAmount + _constants.ChromaticAberration);
-            inputRects[0] = new(outputRect.Left - halo, outputRect.Top, outputRect.Right + halo, outputRect.Bottom);
+            inputRects[0] = new(Safe((long)outputRect.Left - halo), outputRect.Top, Safe((long)outputRect.Right + halo), outputRect.Bottom);
         }
+
+        private static int Safe(long value) => (int)Math.Clamp(value, int.MinValue, int.MaxValue);
 
         [StructLayout(LayoutKind.Sequential)]
         private struct Constants
