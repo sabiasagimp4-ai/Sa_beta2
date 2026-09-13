@@ -68,9 +68,13 @@ float4 SampleClamped(float2 pos)
 D2D_PS_ENTRY(main)
 {
     float2 p = D2DGetScenePosition().xy;
+    // Materialize the source sample before any dynamic branch. FXC's
+    // D2D helper can otherwise report its generated input coordinate as
+    // potentially uninitialized on the passthrough return path.
+    float4 passthrough = SampleAt(p);
     bool flat = glitchAmount <= 0 && chromaticAberration <= 0 && scanlineAmount <= 0
         && vignetteAmount <= 0 && saturation == 1 && hueRotate == 0 && brightness == 1;
-    if (flat) return SampleAt(p);
+    if (flat) return passthrough;
 
     float2 shift = BandOffset(p.y);
     float2 basePos = p + shift;
@@ -115,3 +119,4 @@ D2D_PS_ENTRY(main)
     rgb = saturate(rgb);
     return float4(rgb * alpha, alpha);
 }
+
